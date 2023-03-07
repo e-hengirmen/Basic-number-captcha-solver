@@ -16,8 +16,8 @@ import urllib.request
 #########################################################
 # change myDEPT to your department
 # delete departments that you dont want to take courses from the class_codes list
-Username    = "e246801"     #fill your metu username
-Password    = "RSEL1.rsel"    #fill your password
+Username    = "e123456"     #fill your metu username
+Password    = "#########"    #fill your password
 #########################################################
 
 start = time.time()
