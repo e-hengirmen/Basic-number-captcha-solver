@@ -1,0 +1,211 @@
+import cv2
+import numpy as np
+import os
+
+#--------------------constants------------------
+pixel_limit=155
+#-----------------------------------------------
+
+
+def print_gray(img,filename):
+    file = open("texts/"+filename[:-3]+"txt", "w")
+    for i in img:
+        for j in i:
+            file.write(str(j))
+            length = len(str(j))
+            for x in range(4 - length):
+                file.write(" ")
+        file.write("\n")
+def search(gray,i,j,n,m,neighboor_range):
+    low_range_n = max(0, i - neighboor_range)
+    low_range_m = max(0, j - neighboor_range)
+    high_range_n = min(n - 1, i + neighboor_range)
+    high_range_m = min(m - 1, j + neighboor_range)
+    counter = 0
+    summed=0
+    for x in range(low_range_n, high_range_n + 1):
+        for y in range(low_range_m, high_range_m + 1):
+            if gray[x][y] < pixel_limit:
+                counter += 1
+                summed+=gray[x][y]
+    summed=summed//max(counter,1)
+    return counter,(neighboor_range * 2 + 1) ** 2,summed
+
+def weighted_search_vertical(gray,i,j,n,m):
+    neighboor_range1 = 4
+    neighboor_range2 = 1
+    count=0
+    summed=0
+
+    for sign_multiplier in [-1,1]:
+        increment=sign_multiplier
+        # vertical
+        first_range_n = min(max(0, i - sign_multiplier*neighboor_range1),n-1)
+        second_range_n = min(max(0, i - sign_multiplier*neighboor_range1),n-1)
+        first_range_m = max(0, j - neighboor_range2)
+        second_range_m = min(m-1, j + neighboor_range2)
+        end_flag=False
+        for i in range(first_range_n,second_range_n+increment,increment):
+            local_count=0
+            for j in range(first_range_m,second_range_m):
+                if gray[i][j]<pixel_limit:
+                    local_count+=1
+                    summed+=gray[i][j]
+                count+=local_count
+                if local_count<2:
+                    end_flag=True
+                    break
+            if end_flag:
+                break
+        # horizontal
+        first_range_m = min(max(0, j - sign_multiplier*neighboor_range1),m-1)
+        second_range_m = min(max(0, j - sign_multiplier*neighboor_range1),m-1)
+        first_range_n = max(0, i - neighboor_range2)
+        second_range_n = min(n-1, i + neighboor_range2)
+        end_flag=False
+        for j in range(first_range_m,second_range_m+increment,increment):
+            local_count=0
+            for i in range(first_range_n,second_range_n):
+                if gray[i][j]<pixel_limit:
+                    local_count+=1
+                    summed+=gray[i][j]
+                count+=local_count
+                if local_count<2:
+                    end_flag=True
+                    break
+            if end_flag:
+                break
+    if gray[i][j]<pixel_limit:
+        summed+=3*gray[i][j]
+    summed=summed//max(count,1)
+    return count,6+(neighboor_range1*2+1)**2-4*(neighboor_range1-neighboor_range2)**2,summed
+
+def simplify(filename):
+    img = cv2.imread('captchas/'+filename)
+
+    # Convert the image to grayscale
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    n,m=gray.shape
+    res=np.zeros((n,m,3))
+    res=255-res
+
+    case1=case2=base1=base2=base3=base4=line1=0
+    for i in range(n):
+        for j in range(m):
+            #first vetrtical check
+            '''counter,area,mean=weighted_search_vertical(gray, i, j, n, m)
+            if counter>=area*0.25:
+                if gray[i][j]<pixel_limit:
+                    mean= gray[i][j]
+                res[i][j][0] = res[i][j][1] = res[i][j][2] = 255#mean
+                res[i][j][2]=0
+                line1+=1
+                continue'''
+
+            if gray[i][j]<pixel_limit:
+                #mini search
+
+                counter, area, _ = search(gray, i, j, n, m, 1)
+                if counter <= 3:
+                    res[i][j][0] =res[i][j][1] =res[i][j][2] = 255
+                    #res[i][j][0]=0
+                    base1+=1
+                    continue
+                counter, area, _ = search(gray, i, j, n, m, 2)
+                if counter <= area * (0.33):  # 7.5->7
+                    res[i][j][0] =res[i][j][1] =res[i][j][2] = 255
+                    #res[i][j][1] = 0
+                    base2+=1
+                    continue
+                res[i][j][0] = res[i][j][1] = res[i][j][2] = gray[i][j]
+                '''res[i][j][0] = res[i][j][1] = res[i][j][2] = gray[i][j]
+                counter, area, mean = search(gray, i, j, n, m, 3)
+                if counter <= area*0.30:
+                    res[i][j][0] =res[i][j][1] =res[i][j][2] = 255
+                    res[i][j][2] = 0
+                    base3+=1
+                    continue
+
+                #main search
+                counter,area, _=search(gray,i,j,n,m,4)
+                if counter>=area*(0.25):  #%25
+                    res[i][j][0] =res[i][j][1] =res[i][j][2]=gray[i][j]
+                else:
+                    res[i][j][0] =res[i][j][1] =res[i][j][2] = 255
+                    #res[i][j][2] = 50
+                    res[i][j][0] =0
+                    base4+=1'''
+
+
+            else:
+                counter, area, mean = search(gray, i, j, n, m, 1)
+                if counter >= 7:
+                    res[i][j][0] =res[i][j][1] =res[i][j][2] = mean
+                    case1+=1
+                    continue
+                counter, area, mean = search(gray, i, j, n, m, 2)
+                if counter >= area * (0.66):  # 7.5->7
+                    res[i][j][0] =res[i][j][1] =res[i][j][2] = mean
+                    case2+=1
+                else:
+                    res[i][j][0] =res[i][j][1] =res[i][j][2]=255
+
+    print(case1,case2,"-",base1,base2,base3,base4,"-",line1)
+
+
+    #-----------------------clip boundary---------------------
+    rows,columns=np.zeros((n)),np.zeros((m))
+    for i in range(n):
+        for j in range(m):
+            if(res[i][j][0]<pixel_limit):
+                rows[i]+=1
+                columns[j]+=1
+    row_counter=column_counter=0
+    row_mean=column_mean=0
+    epsilon=3
+
+    for i in rows:
+        if i>epsilon:
+            row_counter+=1
+            row_mean+=i
+    row_mean=row_mean//row_counter
+    for i in columns:
+        if i>epsilon:
+            column_counter+=1
+            column_mean+=i
+    column_mean=column_mean//column_counter
+    print(row_mean,column_mean)
+
+    row_start=0
+    row_end=n-1
+    for i in range(len(rows)):
+        if rows[i] > row_mean*0.33 and rows[i]>epsilon:
+            row_start=i-5
+            break
+    for i in reversed(range(len(rows))):
+        if rows[i] > row_mean * 0.33 and rows[i]>epsilon:
+            row_end = i+5
+            break
+    column_start = 0
+    column_end = m - 1
+    for i in range(len(columns)):
+        if columns[i] > column_mean * 0.33 and columns[i]>epsilon:
+            column_start = i - 5
+            break
+    for i in reversed(range(len(columns))):
+        if columns[i] > column_mean * 0.33 and columns[i]>epsilon:
+            column_end = i + 5
+            break
+    #----------------------------------------------------------
+
+    #print_gray(gray,filename)
+    cv2.imwrite('processed1/'+filename, res[row_start:row_end+1,column_start:column_end+1])
+
+
+
+
+for i in os.listdir("captchas")[:10]+["7-304801.jpg"]:
+    simplify(i)
+
+
