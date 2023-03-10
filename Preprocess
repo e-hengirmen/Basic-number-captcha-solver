@@ -2,8 +2,12 @@ import cv2
 import numpy as np
 import os
 
-#--------------------constants------------------
+#--------------------constants and stats------------------
 pixel_limit=155
+
+min_column=9999
+max_column=0
+overall_mean_size=0
 #-----------------------------------------------
 
 
@@ -153,59 +157,98 @@ def simplify(filename):
 
     print(case1,case2,"-",base1,base2,base3,base4,"-",line1)
 
+    return res
 
+def clip(img):
     #-----------------------clip boundary---------------------
+    n,m,_=img.shape
     rows,columns=np.zeros((n)),np.zeros((m))
+    #----------finding row range--------
     for i in range(n):
         for j in range(m):
-            if(res[i][j][0]<pixel_limit):
+            if(img[i][j][0]<pixel_limit):
                 rows[i]+=1
                 columns[j]+=1
     row_counter=column_counter=0
     row_mean=column_mean=0
     epsilon=3
+    cut_limit = 0.5
 
     for i in rows:
         if i>epsilon:
             row_counter+=1
             row_mean+=i
     row_mean=row_mean//row_counter
+
+    row_start = 0
+    row_end = n - 1
+    for i in range(len(rows)):
+        if rows[i] > row_mean * cut_limit and rows[i] > epsilon:
+            row_start = i - 2
+            break
+    for i in reversed(range(len(rows))):
+        if rows[i] > row_mean * cut_limit and rows[i] > epsilon:
+            row_end = i + 2
+            break
+    # -----------------------------------
+
+
     for i in columns:
         if i>epsilon:
             column_counter+=1
             column_mean+=i
     column_mean=column_mean//column_counter
-    print(row_mean,column_mean)
 
-    row_start=0
-    row_end=n-1
-    for i in range(len(rows)):
-        if rows[i] > row_mean*0.33 and rows[i]>epsilon:
-            row_start=i-5
-            break
-    for i in reversed(range(len(rows))):
-        if rows[i] > row_mean * 0.33 and rows[i]>epsilon:
-            row_end = i+5
-            break
     column_start = 0
     column_end = m - 1
     for i in range(len(columns)):
-        if columns[i] > column_mean * 0.33 and columns[i]>epsilon:
-            column_start = i - 5
+        if columns[i] > column_mean * cut_limit and columns[i]>epsilon:
+            column_start = i - 2
             break
     for i in reversed(range(len(columns))):
-        if columns[i] > column_mean * 0.33 and columns[i]>epsilon:
-            column_end = i + 5
+        if columns[i] > column_mean * cut_limit and columns[i]>epsilon:
+            column_end = i + 2
             break
+
+    print("means", row_mean, column_mean, "shape", column_end - column_start + 1, row_end - row_start + 1)
+
+    needed_space = 6 - (column_end-column_start+1) % 6
+    if (needed_space):
+        column_end += needed_space - needed_space // 2
+        column_start -= needed_space // 2
+    return img[row_start:row_end+1,column_start:column_end+1],column_mean
     #----------------------------------------------------------
 
-    #print_gray(gray,filename)
-    cv2.imwrite('processed1/'+filename, res[row_start:row_end+1,column_start:column_end+1])
+def naive_divide(img):
+    global min_column,max_column,overall_mean_size
+    m=img.shape[1]
+    column_size = m // 6
+    index,digits=filename.split("-")
+    digits=digits.split(".")[0]
+
+    column_start=0
+
+    #-----stat check----
+    if(min_column>m):
+        min_column=m
+    if(max_column<m):
+        max_column=m
+    overall_mean_size+=m
+    #-------------------
+
+    for i in range(6):
+        cv2.imwrite('processed1/'+index+","+str(i+1)+"-"+digits[i]+".jpg", img[:,column_start:column_start+column_size])
+        column_start += column_size
+
+def k_means(img):
+    m=img.shape[1]
 
 
+for filename in os.listdir("captchas"):#["1099-010481.jpg"]:#
+    img=simplify(filename)
+    img,mean=clip(img)
+    naive_divide(img)
+    #centers=k_means(img)
 
-
-for i in os.listdir("captchas")[:10]+["7-304801.jpg"]:
-    simplify(i)
-
+print("min:",min_column,"max:",max_column,"mean",overall_mean_size/len(os.listdir("captchas")))
 
