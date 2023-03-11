@@ -1,13 +1,20 @@
 import cv2
 import numpy as np
 import os
+from math import sqrt,log2
+from sklearn.cluster import KMeans
 
 #--------------------constants and stats------------------
 pixel_limit=155
+folder_name="processed"
 
 min_column=9999
 max_column=0
-overall_mean_size=0
+min_row=9999
+max_row=0
+
+overall_mean_column_size=0
+overall_mean_row_size=0
 #-----------------------------------------------
 
 
@@ -155,7 +162,7 @@ def simplify(filename):
                 else:
                     res[i][j][0] =res[i][j][1] =res[i][j][2]=255
 
-    print(case1,case2,"-",base1,base2,base3,base4,"-",line1)
+    #print(case1,case2,"-",base1,base2,base3,base4,"-",line1)
 
     return res
 
@@ -163,12 +170,12 @@ def clip(img):
     #-----------------------clip boundary---------------------
     n,m,_=img.shape
     rows,columns=np.zeros((n)),np.zeros((m))
+    column_max_dist=np.zeros((m))
     #----------finding row range--------
     for i in range(n):
         for j in range(m):
             if(img[i][j][0]<pixel_limit):
                 rows[i]+=1
-                columns[j]+=1
     row_counter=column_counter=0
     row_mean=column_mean=0
     epsilon=3
@@ -192,6 +199,23 @@ def clip(img):
             break
     # -----------------------------------
 
+    for j in range(m):
+        bottom=-1
+        top=9999
+        for i in range(row_start,row_end+1):
+            if(img[i][j][0]<pixel_limit):
+                #pixel count
+                columns[j]+=1
+
+                #max dist calculation
+                top=i
+                if(bottom==-1):
+                    bottom=i
+        '''if columns[j] >=(row_end-row_start)/2:
+            columns[j]*=columns[j]
+            #194 1907 1942 1982'''
+        if columns[j]>=3:
+            columns[j]+=sqrt(top-bottom)
 
     for i in columns:
         if i>epsilon:
@@ -203,25 +227,25 @@ def clip(img):
     column_end = m - 1
     for i in range(len(columns)):
         if columns[i] > column_mean * cut_limit and columns[i]>epsilon:
-            column_start = i - 2
+            column_start = i - 5
             break
     for i in reversed(range(len(columns))):
         if columns[i] > column_mean * cut_limit and columns[i]>epsilon:
-            column_end = i + 2
+            column_end = i + 5
             break
 
-    print("means", row_mean, column_mean, "shape", column_end - column_start + 1, row_end - row_start + 1)
+    print(filename,"-> means", row_mean, column_mean, "shape", column_end - column_start + 1, row_end - row_start + 1)
 
-    needed_space = 6 - (column_end-column_start+1) % 6
+    needed_space = 7 - (column_end-column_start+1) % 7
     if (needed_space):
         column_end += needed_space - needed_space // 2
         column_start -= needed_space // 2
-    return img[row_start:row_end+1,column_start:column_end+1],column_mean
+    return img[row_start:row_end+1,column_start:column_end+1],columns[column_start:column_end+1]
     #----------------------------------------------------------
 
-def naive_divide(img):
-    global min_column,max_column,overall_mean_size
-    m=img.shape[1]
+def naive_divide(img,filename):
+    global min_column,max_column,min_row,max_row,overall_mean_column_size,overall_mean_row_size
+    n,m,_=img.shape
     column_size = m // 6
     index,digits=filename.split("-")
     digits=digits.split(".")[0]
@@ -229,26 +253,104 @@ def naive_divide(img):
     column_start=0
 
     #-----stat check----
-    if(min_column>m):
-        min_column=m
-    if(max_column<m):
-        max_column=m
-    overall_mean_size+=m
+    if(min_column>m):min_column=m
+    if(max_column<m):max_column=m
+    if(min_row<n):min_row=n
+    if(max_row<n):max_row=n
+    overall_mean_column_size+=m
+    overall_mean_row_size+=n
     #-------------------
 
     for i in range(6):
-        cv2.imwrite('processed1/'+index+","+str(i+1)+"-"+digits[i]+".jpg", img[:,column_start:column_start+column_size])
+        cv2.imwrite(folder_name+"/"+index+","+str(i+1)+"-"+digits[i]+".jpg", img[:,column_start:column_start+column_size])
         column_start += column_size
 
-def k_means(img):
-    m=img.shape[1]
+def k_means(columns,epoch=100):
+    m=columns.shape[0]
+    #-----center of mass calclation-----
+    center_of_mass=np.sum(np.arange(m)*columns)//np.sum(columns)
+    #-----------------------------------
+    centroids=np.arange(m//7,m,m//7)
+    columns=columns                 #increasing column weights to decrease the weight of artifacts if any remaining for k_means
+
+    column_centers=np.zeros(m)
+    for i in range(epoch):
+        choose_centers(centroids,column_centers)
+        new_centroids=center_centroids(columns,column_centers)
+        if np.array_equal(centroids,new_centroids):
+            print(centroids)
+            return centroids
+        centroids=new_centroids
+    print(centroids)
+    return centroids
+def choose_centers(centroids,column_centers):
+    index=0
+    m=column_centers.shape[0]
+    while(index<=centroids[0]):
+        column_centers[index] = 0
+        index+=1
+    for high_center in range(1,6):
+        while (index < centroids[high_center]):
+            if(centroids[high_center]-index<index-centroids[high_center-1]):
+                column_centers[index] = high_center
+            else:
+                column_centers[index] = high_center-1
+            index += 1
+    while (index < m):
+        column_centers[index] = 5
+        index += 1
+
+def center_centroids(columns,column_centers):
+    m=columns.shape[0]
+    centroid_distance_mass_sum=np.zeros(6)
+    centroid_mass_sum=np.zeros(6)+0.0000001
+
+    for index in range(columns.shape[0]):
+        centroid_distance_mass_sum[round(column_centers[index])] += columns[index]*index
+        centroid_mass_sum[round(column_centers[index])]          += columns[index]
+    return centroid_distance_mass_sum/centroid_mass_sum
 
 
-for filename in os.listdir("captchas"):#["1099-010481.jpg"]:#
+
+
+
+
+def save_img(img,filename):
+    global folder_name
+    cv2.imwrite(folder_name+"/" + filename,img)
+
+
+
+
+
+
+
+
+
+
+'''for filename in ["426-613133.jpg"]:
+    img = simplify(filename)
+    img, columns = clip(img)
+    print(img)
+    # naive_divide(img,filename)
+    save_img(img, filename)
+exit()'''
+
+if not os.path.exists(folder_name):
+    os.makedirs(folder_name)
+for filename in os.listdir("captchas")[1000:1100]:#["1099-010481.jpg"]:#
     img=simplify(filename)
-    img,mean=clip(img)
-    naive_divide(img)
-    #centers=k_means(img)
+    img,columns=clip(img)
+    #naive_divide(img,filename)
+    centers=k_means(columns)
 
-print("min:",min_column,"max:",max_column,"mean",overall_mean_size/len(os.listdir("captchas")))
+    n,m,_=img.shape
+    for i in range(n):
+        for center in centers:
+            center=round(center)
+            img[i][center][2]=0
+    save_img(img,filename)
+
+print("column-min:",min_column,"max:",max_column,"mean",overall_mean_column_size/100)#len(os.listdir("captchas")))
+print("row   -min:",min_row,"max:",max_row,"mean",overall_mean_row_size/100)#len(os.listdir("captchas")))
 
