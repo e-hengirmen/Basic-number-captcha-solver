@@ -82,7 +82,7 @@ print("Train accuracy:", train_acc,1-train_acc)
 print("Test  accuracy:", test_acc,1-test_acc)
 
 #saving the model for later use
-model.save("captcha-CNN-1",overwrite=True)
+model.save("model/captcha-CNN-1",overwrite=True)
 
 
 y_pred = model.predict(X)
