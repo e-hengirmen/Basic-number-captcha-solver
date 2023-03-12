@@ -2,11 +2,10 @@ import cv2
 import numpy as np
 import os
 from math import sqrt,log2
-from sklearn.cluster import KMeans
 
 #--------------------constants and stats------------------
 pixel_limit=155
-folder_name="processed"
+folder_name="digits"
 
 min_column=9999
 max_column=0
@@ -198,24 +197,11 @@ def clip(img):
             row_end = i + 2
             break
     # -----------------------------------
-
     for j in range(m):
-        bottom=-1
-        top=9999
         for i in range(row_start,row_end+1):
             if(img[i][j][0]<pixel_limit):
                 #pixel count
                 columns[j]+=1
-
-                #max dist calculation
-                top=i
-                if(bottom==-1):
-                    bottom=i
-        '''if columns[j] >=(row_end-row_start)/2:
-            columns[j]*=columns[j]
-            #194 1907 1942 1982'''
-        if columns[j]>=3:
-            columns[j]+=sqrt(top-bottom)
 
     for i in columns:
         if i>epsilon:
@@ -240,6 +226,21 @@ def clip(img):
     if (needed_space):
         column_end += needed_space - needed_space // 2
         column_start -= needed_space // 2
+
+    #------------value adjustment-----------------
+
+    for j in range(m):
+        if columns[j]>=3:
+            bottom = -1
+            top = 9999
+            for i in range(row_start, row_end + 1):
+                if (img[i][j][0] < pixel_limit):
+                    # max dist calculation
+                    top = i
+                    if (bottom == -1):
+                        bottom = i
+            columns[j]+=sqrt(top-bottom)
+    #---------------------------------------------
     return img[row_start:row_end+1,column_start:column_end+1],columns[column_start:column_end+1]
     #----------------------------------------------------------
 
@@ -327,30 +328,23 @@ def save_img(img,filename):
 
 
 
-
-'''for filename in ["426-613133.jpg"]:
-    img = simplify(filename)
-    img, columns = clip(img)
-    print(img)
-    # naive_divide(img,filename)
-    save_img(img, filename)
-exit()'''
-
 if not os.path.exists(folder_name):
     os.makedirs(folder_name)
-for filename in os.listdir("captchas")[1000:1100]:#["1099-010481.jpg"]:#
+
+for filename in os.listdir("captchas"):
     img=simplify(filename)
     img,columns=clip(img)
     #naive_divide(img,filename)
     centers=k_means(columns)
 
+    divide=7
+    index, digits = filename.split("-")
+    digits = digits.split(".")[0]
     n,m,_=img.shape
-    for i in range(n):
-        for center in centers:
-            center=round(center)
-            img[i][center][2]=0
-    save_img(img,filename)
+    for center,digit,digit_index in zip(centers,digits,range(1,7)):
+        center=round(center)
+        cv2.imwrite(folder_name + "/" + index + "," + str(digit_index) + "-" + digit + ".jpg",
+                    img[:, max(center-divide,0):min(center+divide+1,m)])
+    #save_img(img,filename)
 
-print("column-min:",min_column,"max:",max_column,"mean",overall_mean_column_size/100)#len(os.listdir("captchas")))
-print("row   -min:",min_row,"max:",max_row,"mean",overall_mean_row_size/100)#len(os.listdir("captchas")))
 
