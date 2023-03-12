@@ -97,7 +97,7 @@ def simplify(filename):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     n,m=gray.shape
-    res=np.zeros((n,m,3))
+    res=np.zeros((n,m))
     res=255-res
 
     case1=case2=base1=base2=base3=base4=line1=0
@@ -118,17 +118,15 @@ def simplify(filename):
 
                 counter, area, _ = search(gray, i, j, n, m, 1)
                 if counter <= 3:
-                    res[i][j][0] =res[i][j][1] =res[i][j][2] = 255
-                    #res[i][j][0]=0
+                    res[i][j] = 255
                     base1+=1
                     continue
                 counter, area, _ = search(gray, i, j, n, m, 2)
                 if counter <= area * (0.33):  # 7.5->7
-                    res[i][j][0] =res[i][j][1] =res[i][j][2] = 255
-                    #res[i][j][1] = 0
+                    res[i][j] = 255
                     base2+=1
                     continue
-                res[i][j][0] = res[i][j][1] = res[i][j][2] = gray[i][j]
+                res[i][j] = gray[i][j]
                 '''res[i][j][0] = res[i][j][1] = res[i][j][2] = gray[i][j]
                 counter, area, mean = search(gray, i, j, n, m, 3)
                 if counter <= area*0.30:
@@ -151,15 +149,15 @@ def simplify(filename):
             else:
                 counter, area, mean = search(gray, i, j, n, m, 1)
                 if counter >= 7:
-                    res[i][j][0] =res[i][j][1] =res[i][j][2] = mean
+                    res[i][j] = mean
                     case1+=1
                     continue
                 counter, area, mean = search(gray, i, j, n, m, 2)
                 if counter >= area * (0.66):  # 7.5->7
-                    res[i][j][0] =res[i][j][1] =res[i][j][2] = mean
+                    res[i][j] = mean
                     case2+=1
                 else:
-                    res[i][j][0] =res[i][j][1] =res[i][j][2]=255
+                    res[i][j]=255
 
     #print(case1,case2,"-",base1,base2,base3,base4,"-",line1)
 
@@ -167,13 +165,13 @@ def simplify(filename):
 
 def clip(img):
     #-----------------------clip boundary---------------------
-    n,m,_=img.shape
+    n,m=img.shape
     rows,columns=np.zeros((n)),np.zeros((m))
     column_max_dist=np.zeros((m))
     #----------finding row range--------
     for i in range(n):
         for j in range(m):
-            if(img[i][j][0]<pixel_limit):
+            if(img[i][j]<pixel_limit):
                 rows[i]+=1
     row_counter=column_counter=0
     row_mean=column_mean=0
@@ -199,7 +197,7 @@ def clip(img):
     # -----------------------------------
     for j in range(m):
         for i in range(row_start,row_end+1):
-            if(img[i][j][0]<pixel_limit):
+            if(img[i][j]<pixel_limit):
                 #pixel count
                 columns[j]+=1
 
@@ -234,7 +232,7 @@ def clip(img):
             bottom = -1
             top = 9999
             for i in range(row_start, row_end + 1):
-                if (img[i][j][0] < pixel_limit):
+                if (img[i][j] < pixel_limit):
                     # max dist calculation
                     top = i
                     if (bottom == -1):
@@ -246,7 +244,7 @@ def clip(img):
 
 def naive_divide(img,filename):
     global min_column,max_column,min_row,max_row,overall_mean_column_size,overall_mean_row_size
-    n,m,_=img.shape
+    n,m=img.shape
     column_size = m // 6
     index,digits=filename.split("-")
     digits=digits.split(".")[0]
@@ -331,7 +329,7 @@ def save_img(img,filename):
 if not os.path.exists(folder_name):
     os.makedirs(folder_name)
 
-for filename in os.listdir("captchas"):
+for filename in os.listdir("captchas")[1000:1100]:
     img=simplify(filename)
     img,columns=clip(img)
     #naive_divide(img,filename)
@@ -340,7 +338,7 @@ for filename in os.listdir("captchas"):
     divide=7
     index, digits = filename.split("-")
     digits = digits.split(".")[0]
-    n,m,_=img.shape
+    n,m=img.shape
     for center,digit,digit_index in zip(centers,digits,range(1,7)):
         center=round(center)
         cv2.imwrite(folder_name + "/" + index + "," + str(digit_index) + "-" + digit + ".jpg",
