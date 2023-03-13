@@ -4,7 +4,7 @@ This is a real-life implementation of [CNN](https://www.tensorflow.org/tutorials
 
 Lastly the digit images are fed to CNN to train it.
 
-
+This captcha solver was developed to be used in and currently being used in [metu-NTE-scraper](https://github.com/e-hengirmen/metu-NTE-scraper) to get around METU's student portal captcha protection for course capacity checks https://student.metu.edu.tr/.
 
 # CNN Model Description
 I trained a CNN using TensorFlow to classify images of captcha digits after digit extraction. The model consists of 2 convolutional layers and pooling layers followed by a fully connected layer. I trained the model on a dataset of 10000 captcha images which was later on divided into 60000 digit images and achieved a test accuracy of 99.8% on a 12000 digit img test set.
@@ -15,11 +15,22 @@ Train and test accuracy of the model are:
 
 Note: Some of the images of activation neuron responses can be seen below the 4 Preprocess steps
 
-# Steps
+# How to use it?
+1. Import [`predict.py`](predict.py) to your python program:
+```
+Import predict
+```
+2. And call `predict_captcha` function using the captcha image's filepath as the only argument to predict the captcha
+```
+filepath="path\to\captcha\image"
+predict.predict_captcha(filepath)
+```
 
-To help with understanding the digit extractor and the model we show the visualization of their steps
+# How does it work
 
-The [`Preprocess.py`](Preprocess.py) works in 4 steps to create digit images which are shown below`with the model activations at the end
+To help with understanding the digit extractor and the model we show the visualized their steps for you
+
+The [`Preprocess.py`](Preprocess.py) works in 4 steps to create digit images which are shown below with the model activations at the end
 
 ## 1 Artifact removel
 In first step we clear the artifacts of the captcha images which was collected using [`SampleCollecter.py`](SampleCollecter.py)
