@@ -40,7 +40,7 @@ def get_prediction(model,filepath_list):
 
 
 
-    y_pred = model.predict(X)
+    y_pred = model.predict(X,verbose=0)
     y_pred = np.argmax(y_pred, axis=1)
 
     return y_pred

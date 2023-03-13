@@ -229,7 +229,7 @@ def clip(img):
             if objective_found:
                 objective_found = False
                 break
-    print("means", row_mean, column_mean, "shape", column_end - column_start + 1, row_end - row_start + 1)
+    #print("means", row_mean, column_mean, "shape", column_end - column_start + 1, row_end - row_start + 1)
 
     needed_space = 7 - (column_end-column_start+1) % 7
     if (needed_space):
@@ -289,10 +289,10 @@ def k_means(columns,epoch=100):
         choose_centers(centroids,column_centers)
         new_centroids=center_centroids(columns,column_centers)
         if np.array_equal(centroids,new_centroids):
-            print(centroids)
+            #print(centroids)
             return centroids
         centroids=new_centroids
-    print(centroids)
+    #print(centroids)
     return centroids
 def choose_centers(centroids,column_centers):
     index=0
