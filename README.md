@@ -1,6 +1,6 @@
 # Basic-number-captcha-solver with tensorflow CNN
 
-This is a real-life implementation of [CNN](https://www.tensorflow.org/tutorials/images/cnn?hl=tr) on Python 3, Keras, and TensorFlow. We work in 2 main steps using [`Preprocess.py`](Preprocess.py) which creates artifactless digit images and [`train.py`](train.py) which trains and saves the CNN model. Lastly the digit images are fed to CNN to train it.
+This is a real-life implementation of [CNN](https://www.tensorflow.org/tutorials/images/cnn?hl=tr) on Python 3, Keras, and TensorFlow. We work in 2 main steps using [`Preprocess.py`](Preprocess.py) which creates artifactless digit images which are later on fed to CNN model in [`train.py`](train.py) which trains and saves the CNN model.
 
 This captcha solver was developed to be used in and currently being used in [metu-NTE-scraper](https://github.com/e-hengirmen/metu-NTE-scraper) to get around METU's student portal captcha protection for course capacity checks https://student.metu.edu.tr/.
 
@@ -63,7 +63,7 @@ Centroids            |  Digits
 <img src="visualized_steps/3-k_means/1902-202236.jpg" width="300">  |  <img src="visualized_steps/digits/1902,1-2.jpg" width="50"> <img src="visualized_steps/digits/1902,2-0.jpg" width="50"> <img src="visualized_steps/digits/1902,3-2.jpg" width="50"> <img src="visualized_steps/digits/1902,4-2.jpg" width="50"> <img src="visualized_steps/digits/1902,5-3.jpg" width="50"> <img src="visualized_steps/digits/1902,6-6.jpg" width="50">
 
 ## 5-Activation Images
-After the digits are extracted. The CNN model is used to predict the captcha images. Here are generated activation neuron images for the last convolutional layer of the CNN by extracting the output of the layer and visualizing it as an image. These activation images show the response of some of the filters in the last convolutional layer to 2 images.
+After the digits are extracted. The CNN model is used to predict the captcha images. Here are generated activation neurons for the last convolutional layer of the CNN. These images were created by extracting the output of the last convolutional layer and visualizing it as an image. Below activation images show the response of some of the filters in the last convolutional layer of 2 digit images.
 
 Extracted Digit            |  activation 10 |  activation 18 |  activation 26 |  activation 29
 :-------------------------:|:-------------------------:|:-------------------------:|:-------------------------:|:-------------------------:
