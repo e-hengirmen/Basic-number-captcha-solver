@@ -5,7 +5,7 @@ from math import sqrt,log2
 
 #--------------------constants and stats------------------
 pixel_limit=155
-folder_name="digits"
+folder_name=""
 
 min_column=9999
 max_column=0
@@ -90,8 +90,8 @@ def weighted_search_vertical(gray,i,j,n,m):
     summed=summed//max(count,1)
     return count,6+(neighboor_range1*2+1)**2-4*(neighboor_range1-neighboor_range2)**2,summed
 
-def simplify(filename):
-    img = cv2.imread('captchas/'+filename)
+def simplify(filepath):
+    img = cv2.imread(filepath)
 
     # Convert the image to grayscale
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -177,7 +177,6 @@ def clip(img):
     row_mean=column_mean=0
     epsilon=3
     cut_limit = 0.5
-
     for i in rows:
         if i>epsilon:
             row_counter+=1
@@ -209,22 +208,35 @@ def clip(img):
 
     column_start = 0
     column_end = m - 1
+    objective_found=False
     for i in range(len(columns)):
         if columns[i] > column_mean * cut_limit and columns[i]>epsilon:
-            column_start = i - 5
-            break
+            for i2 in range(i+1,i+5):  #finding another in range
+                if columns[i2] > column_mean * cut_limit and columns[i2] > epsilon:
+                    column_start = i - 5
+                    objective_found=True
+                    break
+            if objective_found:
+                objective_found=False
+                break
     for i in reversed(range(len(columns))):
-        if columns[i] > column_mean * cut_limit and columns[i]>epsilon:
-            column_end = i + 5
-            break
-
-    print(filename,"-> means", row_mean, column_mean, "shape", column_end - column_start + 1, row_end - row_start + 1)
+        if columns[i] > column_mean * cut_limit and columns[i] > epsilon:
+            for i2 in range(i-1,i-5,-1):  # finding another in range
+                if columns[i2] > column_mean * cut_limit and columns[i2] > epsilon:
+                    column_end = i + 5
+                    objective_found = True
+                    break
+            if objective_found:
+                objective_found = False
+                break
+    print("means", row_mean, column_mean, "shape", column_end - column_start + 1, row_end - row_start + 1)
 
     needed_space = 7 - (column_end-column_start+1) % 7
     if (needed_space):
         column_end += needed_space - needed_space // 2
         column_start -= needed_space // 2
-
+    if(column_start<0):column_start=0
+    if(column_end>=m):column_end=m-1
     #------------value adjustment-----------------
 
     for j in range(m):
@@ -321,15 +333,33 @@ def save_img(img,filename):
 
 
 
+def extract_digits(filepath,output_folder_name):
+    img = simplify(filepath)
+    img, columns = clip(img)
+    centers = k_means(columns)
+
+    if not os.path.exists(output_folder_name):
+        os.makedirs(output_folder_name)
+
+    divide = 7
+    n, m = img.shape
+    for center, digit_index in zip(centers, range(1, 7)):
+        center = round(center)
+        cv2.imwrite(output_folder_name + "/" + str(digit_index) + ".jpg",
+                    img[:, max(center - divide, 0):min(center + divide + 1, m)])
 
 
 
 
 
+
+'''
+folder_name="digits"
 if not os.path.exists(folder_name):
     os.makedirs(folder_name)
+    
 
-for filename in os.listdir("captchas")[1000:1100]:
+for filename in os.listdir("captchas"):
     img=simplify(filename)
     img,columns=clip(img)
     #naive_divide(img,filename)
@@ -344,5 +374,5 @@ for filename in os.listdir("captchas")[1000:1100]:
         cv2.imwrite(folder_name + "/" + index + "," + str(digit_index) + "-" + digit + ".jpg",
                     img[:, max(center-divide,0):min(center+divide+1,m)])
     #save_img(img,filename)
-
+'''
 
