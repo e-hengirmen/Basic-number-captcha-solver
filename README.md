@@ -15,10 +15,6 @@ The [`Preprocess.py`](Preprocess.py) works in 4 steps to create digit images whi
 ## 1.1 Artifact removel
 In first step we clear the artifacts of the captcha images which was collected using [`SampleCollecter.py`](SampleCollecter.py)
 
-![](captchas/1901-497350.jpg)->![](visualized_steps/1-artifacts_removed/1901-497350.jpg)
-
-![](captchas/1902-202236.jpg)######-->![](visualized_steps/1-artifacts_removed/1902-202236.jpg)
-
 Original Image            |  After artifact removel
 :-------------------------:|:-------------------------:
 <img src="captchas/1901-497350.jpg" width="300">  |  <img src="visualized_steps/1-artifacts_removed/1901-497350.jpg" width="300">
