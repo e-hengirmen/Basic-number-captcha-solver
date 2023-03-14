@@ -16,7 +16,7 @@ from PIL import Image
 
 def predict_captcha(filepath):
     Preprocess.extract_digits(filepath,"temp_captcha_digit_folder")
-    model = tf.keras.models.load_model("model/captcha-CNN-1")
+    model = tf.keras.models.load_model("model/captcha-CNN-2")
     input_filepaths=[]
     for i in range(1,7):
         input_filepaths.append("temp_captcha_digit_folder/"+str(i)+".jpg")
