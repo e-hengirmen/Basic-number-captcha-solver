@@ -21,7 +21,7 @@ Import predict
 2. And call `predict_captcha` function using the captcha image's filepath as the only argument to predict the captcha
 ```
 filepath="path\to\captcha\image"
-predict.predict_captcha(filepath)
+prediction=predict.predict_captcha(filepath)
 ```
 
 # How does it work
