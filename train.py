@@ -92,6 +92,9 @@ y_pred = np.argmax(y_pred, axis=1)
 y_pred = model.predict(X)
 y_pred = np.argmax(y_pred, axis=1)
 
+
+if not os.path.exists("missclassified"):
+    os.mkdir("missclassified")
 for i in range(len(y)):
     if y_pred[i] != y[i]:
         # Save the misclassified image along with its predicted and true labels
