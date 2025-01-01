@@ -4,6 +4,10 @@ This is a real-life implementation of [CNN](https://www.tensorflow.org/tutorials
 
 This captcha solver was developed to be used in and currently being used in [metu-NTE-scraper](https://github.com/e-hengirmen/metu-NTE-scraper) to get around METU's student portal captcha protection for course capacity checks https://student.metu.edu.tr/. But u can use it in your application with simple steps which are explained in [How to use it?](#how-to-use-it) section.
 
+# Requirements
+
+Needs `python3.10` or lower to work because of tensorflow version support
+
 # CNN Model Description
 I trained a CNN using TensorFlow to classify images of captcha digits after digit extraction. The model consists of 2 convolutional layers and pooling layers followed by a fully connected layer. I trained the model on a dataset of 10000 captcha images which was later on divided into 60000 digit images and achieved a test accuracy of 99.94% on a 12000 digit img test set.
 
